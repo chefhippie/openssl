@@ -73,7 +73,7 @@ action :create do
     file key_file.to_s do
       owner new_resource.owner
       group new_resource.group
-      mode "0640"
+      mode 0640
 
       action :create
     end
@@ -81,7 +81,7 @@ action :create do
     file cert_file.to_s do
       owner new_resource.owner
       group new_resource.group
-      mode "0644"
+      mode 0644
 
       action :create
     end
@@ -91,7 +91,7 @@ action :create do
     file key_file.to_s do
       owner new_resource.owner
       group new_resource.group
-      mode "0640"
+      mode 0640
       content cert_bag["key"]
 
       action :create
@@ -112,7 +112,7 @@ action :create do
     file cert_file.to_s do
       owner new_resource.owner
       group new_resource.group
-      mode "0644"
+      mode 0644
       content cert_bag["cert"]
 
       action :create
