@@ -1,6 +1,6 @@
 #
 # Cookbook Name:: openssl
-# Attributes:: default
+# Resource:: ca
 #
 # Copyright 2013-2014, Thomas Boerger <thomas@webhippie.de>
 #
@@ -17,17 +17,13 @@
 # limitations under the License.
 #
 
-default["openssl"]["packages"] = %w(
-  openssl
-  gnutls
-)
+actions :create, :delete
 
-default["openssl"]["cert_path"] = "/etc/pki"
-default["openssl"]["data_bag"] = "openssl"
-default["openssl"]["organization"] = "Webhippie"
-default["openssl"]["expiration"] = 1095
+attribute :name, :kind_of => String, :name_attribute => true
+attribute :source, :kind_of => String, :default => "generate"
+attribute :owner, :kind_of => String, :default => "root"
+attribute :group, :kind_of => String, :default => "root"
+attribute :organization, :kind_of => String, :default => ""
+attribute :expiration, :kind_of => Integer, :default => 1095
 
-default["openssl"]["ca"]["name"] = "ca"
-default["openssl"]["ca"]["source"] = "data_bag"
-default["openssl"]["ca"]["organization"] = node["openssl"]["organization"]
-default["openssl"]["ca"]["expiration"] = node["openssl"]["expiration"]
+default_action :create

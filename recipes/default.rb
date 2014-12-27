@@ -16,3 +16,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+node["openssl"]["packages"].each do |name|
+  package name do
+    action :install
+  end
+end
+
+openssl_ca node["openssl"]["ca"]["name"] do
+  source node["openssl"]["ca"]["source"]
+  organization node["openssl"]["ca"]["organization"]
+  expiration node["openssl"]["ca"]["expiration"]
+
+  action :create
+end
