@@ -25,7 +25,16 @@ end
 
 openssl_ca node["openssl"]["ca"]["name"] do
   source node["openssl"]["ca"]["source"]
+
+  cert_path node["openssl"]["ca"]["cert_path"]
+  key_path node["openssl"]["ca"]["key_path"]
+  crl_path node["openssl"]["ca"]["crl_path"]
+
   organization node["openssl"]["ca"]["organization"]
+  unit node["openssl"]["ca"]["unit"]
+  locality node["openssl"]["ca"]["locality"]
+  state node["openssl"]["ca"]["state"]
+  country node["openssl"]["ca"]["country"]
   expiration node["openssl"]["ca"]["expiration"]
 
   action :create

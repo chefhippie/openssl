@@ -1,0 +1,28 @@
+organization = "<%= @organization %>"
+unit = "<%= @unit %>"
+locality = "<%= @locality %>"
+state = "<%= @state %>"
+country = "<%= @country %>"
+cn = "<%= @cn %>"
+email = "<%= @email %>"
+expiration_days = <%= @expiration %>
+
+<%- @dns_names.each do |value| -%>
+dns_name = "<%= value %>"
+<%- end -%>
+
+<%- @ip_addresses.each do |value| -%>
+ip_address = "<%= value %>"
+<%- end -%>
+
+<%- @nc_permit_dns.each do |value| -%>
+nc_permit_dns = "<%= value %>"
+<%- end -%>
+
+<%- @nc_exclude_dns.each do |value| -%>
+nc_exclude_dns = "<%= value %>"
+<%- end -%>
+
+tls_www_server
+encryption_key
+signing_key

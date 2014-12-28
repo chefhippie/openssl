@@ -1,6 +1,6 @@
 #
 # Cookbook Name:: openssl
-# Provider:: ca
+# Provider:: cert
 #
 # Copyright 2013-2014, Thomas Boerger <thomas@webhippie.de>
 #
@@ -23,13 +23,13 @@ include Chef::DSL::IncludeRecipe
 action :create do
   [
     cert_path.to_s,
-    key_path.to_s,
-    crl_path.to_s
+    csr_path.to_s,
+    key_path.to_s
   ].uniq.each do |name|
     directory name do
       recursive true
       action :create
-    end
+    end    
   end
 
   case new_resource.source
@@ -40,7 +40,7 @@ action :create do
       mode 0640
 
       cookbook "openssl"
-      source "ca.info.erb"
+      source "cert.info.erb"
 
       variables(
         "organization" => new_resource.organization,
@@ -48,24 +48,18 @@ action :create do
         "locality" => new_resource.locality,
         "state" => new_resource.state,
         "country" => new_resource.country,
-        "expiration" => new_resource.expiration
+        "cn" => new_resource.cn,
+        "email" => new_resource.email,
+        "expiration" => new_resource.expiration,
+
+        "dns_names" => new_resource.dns_names,
+        "ip_addresses" => new_resource.ip_addresses,
+        "nc_permit_dns" => new_resource.nc_permit_dns,
+        "nc_exclude_dns" => new_resource.nc_exclude_dns
       )
     end
 
-    template crl_info.to_s do
-      owner new_resource.owner
-      group new_resource.group
-      mode 0640
-
-      cookbook "openssl"
-      source "crl.info.erb"
-
-      variables(
-        "next_update" => new_resource.next_update
-      )
-    end
-
-    bash "openssl_ca_#{new_resource.name}_key" do
+    bash "openssl_cert_#{new_resource.name}_key" do
       code <<-EOH
         certtool --generate-privkey \
           --outfile #{key_file}
@@ -78,34 +72,60 @@ action :create do
       end
     end
 
-    bash "openssl_ca_#{new_resource.name}_cert" do
-      code <<-EOH
-        certtool --generate-self-signed \
-          --template #{cert_info} \
-          --load-privkey #{key_file} \
-          --outfile #{cert_file}
-      EOH
+    if new_resource.self_signing
+      bash "openssl_cert_#{new_resource.name}_cert" do
+        code <<-EOH
+          certtool --generate-self-signed \
+            --template #{cert_info} \
+            --load-privkey #{key_file} \
+            --outfile #{cert_file}
+        EOH
 
-      action :run
+        action :run
 
-      not_if do
-        cert_file.exist?
+        not_if do
+          cert_file.exist?
+        end
       end
-    end
+    else
+      bash "openssl_cert_#{new_resource.name}_csr" do
+        code <<-EOH
+          certtool --generate-request \
+            --template #{cert_info} \
+            --load-privkey #{key_file} \
+            --outfile #{csr_file}
+        EOH
 
-    bash "openssl_ca_#{new_resource.name}_crl" do
-      code <<-EOH
-        certtool --generate-crl \
-          --template #{crl_info} \
-          --load-ca-privkey #{key_file} \
-          --load-ca-certificate #{cert_file} \
-          --outfile #{crl_file}
-      EOH
+        action :run
 
-      action :run
+        not_if do
+          csr_file.exist?
+        end
+      end
 
-      not_if do
-        crl_file.exist?
+      bash "openssl_cert_#{new_resource.name}_cert" do
+        code <<-EOH
+          certtool --generate-certificate \
+            --template #{cert_info} \
+            --load-request #{csr_file} \
+            --load-ca-certificate #{ca_cert} \
+            --load-ca-privkey #{ca_key} \
+            --outfile #{cert_file}
+        EOH
+
+        action :run
+
+        not_if do
+          cert_file.exist?
+        end
+      end
+
+      file csr_file.to_s do
+        owner new_resource.owner
+        group new_resource.group
+        mode 0644
+
+        action :create
       end
     end
 
@@ -118,14 +138,6 @@ action :create do
     end
 
     file cert_file.to_s do
-      owner new_resource.owner
-      group new_resource.group
-      mode 0644
-
-      action :create
-    end
-
-    file crl_file.to_s do
       owner new_resource.owner
       group new_resource.group
       mode 0644
@@ -156,24 +168,24 @@ action :create do
       end
     end
 
-    file crl_file.to_s do
+    file csr_file.to_s do
       owner new_resource.owner
       group new_resource.group
       mode 0644
-      content cert_bag["crl"]
+      content cert_bag["csr"]
 
       action :create
 
       not_if do
-        cert_bag["crl"].nil?
+        cert_bag["csr"].nil?
       end
     end
 
-    file crl_file.to_s do
+    file csr_file.to_s do
       action :delete
 
       only_if do
-        cert_bag["crl"].nil?
+        cert_bag["csr"].nil?
       end
     end
 
@@ -204,17 +216,25 @@ end
 
 action :delete do
   [
-    crl_path.to_s,
     key_path.to_s,
+    csr_path.to_s,
     cert_path.to_s
   ].uniq.each do |name|
     directory name do
       recursive true
       action :delete
-    end
+    end    
   end
 
   new_resource.updated_by_last_action(true)
+end
+
+def ca_cert
+  new_resource.ca_cert
+end
+
+def ca_key
+  new_resource.ca_key
 end
 
 def key_path
@@ -225,16 +245,12 @@ def key_file
   @key_file ||= Pathname.new(new_resource.key_path)
 end
 
-def crl_path
-  @crl_path ||= crl_file.dirname
+def csr_path
+  @csr_path ||= csr_file.dirname
 end
 
-def crl_file
-  @crl_file ||= Pathname.new(new_resource.crl_path)
-end
-
-def crl_info
-  @crl_info ||= crl_path.join("crl.info")
+def csr_file
+  @csr_file ||= Pathname.new(new_resource.csr_path)
 end
 
 def cert_path
@@ -254,7 +270,7 @@ def cert_bag
     values = {
       key: nil,
       cert: nil,
-      crl: nil
+      csr: nil
     }
 
     data_bag_item(
@@ -268,8 +284,10 @@ def cert_bag
 
         "default"
       ].each do |key|
-        return entries[key] unless entries[key].nil?
+        values.merge(entries[key]) unless entries[key].nil?
       end
     end
+
+    values
   end
 end
