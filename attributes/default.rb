@@ -24,12 +24,12 @@ default["openssl"]["packages"] = %w(
 
 default["openssl"]["cert_path"] = "/etc/pki"
 default["openssl"]["data_bag"] = "openssl"
-default["openssl"]["organization"] = "Webhippie"
-default["openssl"]["unit"] = "Hostmaster"
-default["openssl"]["locality"] = "Nuremberg"
-default["openssl"]["state"] = "Bavaria"
-default["openssl"]["country"] = "DE"
-default["openssl"]["email"] = "hostmaster@webhippie.de"
+default["openssl"]["organization"] = ""
+default["openssl"]["unit"] = ""
+default["openssl"]["locality"] = ""
+default["openssl"]["state"] = ""
+default["openssl"]["country"] = ""
+default["openssl"]["email"] = ""
 default["openssl"]["expiration"] = 365
 default["openssl"]["self_signing"] = false
 
